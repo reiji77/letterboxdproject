@@ -4,6 +4,7 @@ import os
 import jwt
 import datetime
 import re
+import userData
 
 
 app = Flask(__name__)
@@ -11,6 +12,7 @@ UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'csv'}
 SECRET_KEY = "your_secret_key"
+app.config['SECRET_KEY'] = SECRET_KEY
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -18,7 +20,12 @@ def allowed_file(filename):
 
 @app.route('/')
 def home():
-    return "Welcome to the Cinephile App!"
+    if not session.get('logged_in'):
+        redirect('/login')
+        return "not logged in"
+    else: 
+        return "currently logged in"
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -26,7 +33,10 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         # Replace this with actual authentication logic
-        if username == 'admin' and password == 'password':
+        user = userData.authenticate_user(username, password, cnx, cursor)
+        if user:
+            session['logged_in'] = True
+            session['id'] = user[0]
             return "Login successful"
         else:
             return "Invalid credentials"
@@ -38,13 +48,31 @@ def login():
         </form>
     '''
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        email = request.form.get('email')
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return "Invalid email address"
+        userData.insert_user(username, password, email, cnx, cursor)
+        return "Registration successful"
+    return '''
+        <form method="post">
+            Username: <input type="text" name="username"><br>
+            Password: <input type="password" name="password"><br>
+            Email: <input type="text" name="email"><br>
+            <input type="submit" value="Register">
+        </form>
+    '''
+
     
 
 @app.route('/token', methods=['POST'])
 def generate_token():
     username = request.form.get('username')
     password = request.form.get('password')
-    # Replace this with actual authentication logic
     if username == 'admin' and password == 'password':
         token = jwt.encode(
             {'username': username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
@@ -85,4 +113,6 @@ def upload():
         return "file uploaded successfully"
     return "file not allowed"
 
-app.run(host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    cnx, cursor = userData.init_db()
+    app.run(host="0.0.0.0", port=5000, debug=True)

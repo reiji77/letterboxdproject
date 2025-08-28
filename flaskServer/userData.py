@@ -9,7 +9,7 @@ def insert_user(username, password, email, cnx, cursor):
     data_user = (username, password, email)
     cnx.cursor.execute(add_user, data_user)
     cnx.commit()
-    return cnx.cursor.lastrowid
+    return cursor.lastrowid
 
 def authenticate_user(username, password, cnx, cursor):
     query = ("SELECT id FROM users WHERE username = %s AND password = %s")

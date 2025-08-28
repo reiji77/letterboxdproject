@@ -21,66 +21,37 @@ def allowed_file(filename):
 @app.route('/')
 def home():
     if not session.get('logged_in'):
-        redirect('/login')
-        return "not logged in"
+        return jsonify({"status": 200, "message": "Logged in"})
     else: 
-        return "currently logged in"
+        return jsonify({"status": 400, "message": "Not logged in"})
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        # Replace this with actual authentication logic
-        user = userData.authenticate_user(username, password, cnx, cursor)
-        if user:
-            session['logged_in'] = True
-            session['id'] = user[0]
-            return "Login successful"
-        else:
-            return "Invalid credentials"
-    return '''
-        <form method="post">
-            Username: <input type="text" name="username"><br>
-            Password: <input type="password" name="password"><br>
-            <input type="submit" value="Login">
-        </form>
-    '''
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        email = request.form.get('email')
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            return "Invalid email address"
-        userData.insert_user(username, password, email, cnx, cursor)
-        return "Registration successful"
-    return '''
-        <form method="post">
-            Username: <input type="text" name="username"><br>
-            Password: <input type="password" name="password"><br>
-            Email: <input type="text" name="email"><br>
-            <input type="submit" value="Register">
-        </form>
-    '''
-
-    
-
-@app.route('/token', methods=['POST'])
-def generate_token():
     username = request.form.get('username')
     password = request.form.get('password')
-    if username == 'admin' and password == 'password':
+    user = userData.authenticate_user(username, password, cnx, cursor)
+    if user:
         token = jwt.encode(
             {'username': username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
             SECRET_KEY,
             algorithm='HS256'
         )
-        return {'token': token}
-    return "Invalid credentials", 401
+        session['id'] = user[0]
+        return jsonify({"status": 200, "message": "Login successful", "token": token})
+    else:
+        return jsonify({"status": 401, "message": "Invalid credentials"})
+
+@app.route('/register', methods=['POST'])
+def register():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    email = request.form.get('email')
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return jsonify({"status": 400, "message": "Invalid email address"})
+    userData.insert_user(username, password, email, cnx, cursor)
+    return jsonify({"status": 200, "message": "User registered successfully"})
+
 
 @app.route('/protected', methods=['GET'])
 def protected():
@@ -97,21 +68,15 @@ def protected():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    # check if the post request has the file part
     print(request.files)
     if 'file' not in request.files:
-        return "no file given"
+        jsonify({"status": 400, "message": "No file part"})
     file = request.files['file']
-    # If the user does not select a file, the browser submits an
-    # empty file without a filename.
-    if file.filename == '':
-        flash('No selected file')
-        return "no file given"
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return "file uploaded successfully"
-    return "file not allowed"
+        return jsonify({"status": 200, "message": "File uploaded successfully"})
+    return jsonify({"status": 400, "message": "Invalid file format"})
 
 if __name__ == '__main__':
     cnx, cursor = userData.init_db()

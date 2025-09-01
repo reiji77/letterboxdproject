@@ -1,0 +1,16 @@
+.navBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #242424; /* Adjust as needed */
+    padding: 5px 10px;
+    z-index: 1000;
+    right: 5px;
+}
+
+.navBar button {
+    margin: 0 3px;
+}

@@ -78,6 +78,14 @@ def upload():
         return jsonify({"status": 200, "message": "File uploaded successfully"})
     return jsonify({"status": 400, "message": "Invalid file format"})
 
+@app.route('/friends', methods=['POST'])
+def get_friends():
+    user_id = session.get('id')
+    if not user_id:
+        return jsonify({"status": 401, "message": "Unauthorized"})
+    
+    return jsonify({"status": 400, "message": "Invalid file format"})
+
 if __name__ == '__main__':
     cnx, cursor = userData.init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)

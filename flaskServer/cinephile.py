@@ -5,7 +5,7 @@ import jwt
 import datetime
 import re
 import userData
-
+import models 
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -68,13 +68,15 @@ def protected():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    print(request.files)
+    user_id = session.get('id')
+    if not user_id:
+        return jsonify({"status": 401, "message": "Unauthorized"})
     if 'file' not in request.files:
         jsonify({"status": 400, "message": "No file part"})
     file = request.files['file']
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], f'{user_id}.csv'))
+        userData.insert_csv(os.path.join(app.config['UPLOAD_FOLDER'], f'{user_id}.csv'), user_id, cnx, cursor)
         return jsonify({"status": 200, "message": "File uploaded successfully"})
     return jsonify({"status": 400, "message": "Invalid file format"})
 
@@ -85,6 +87,16 @@ def get_friends():
         return jsonify({"status": 401, "message": "Unauthorized"})
     
     return jsonify({"status": 400, "message": "Invalid file format"})
+
+@app.route('/generateMap', methods=['POST'])
+def generateMap():
+    user_id = session.get('id')
+    if not user_id:
+        return jsonify({"status": 401, "message": "Unauthorized"})
+    movies = userData.get_movies(user_id, cursor)
+    tasteMap = models.createTasteProfile(movies)
+    userData.insertTasteMap(user_id, str(tasteMap), cnx, cursor)
+    return jsonify({"status": 200, "message": "Taste map generated/updated successfully", "tasteMap": tasteMap})
 
 if __name__ == '__main__':
     cnx, cursor = userData.init_db()

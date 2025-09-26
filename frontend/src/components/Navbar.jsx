@@ -3,7 +3,7 @@ import './Navbar.css'
 
 export function Navbar() {
     return (
-    <div className="navBar">
+    <ul className="navbar">
         <Link to="/">
             <button>Home</button>
         </Link>
@@ -16,6 +16,5 @@ export function Navbar() {
         <Link to="/profile">
             <button>Profile</button>
         </Link>
-    </div> 
-    )
+    </ul>)
 }

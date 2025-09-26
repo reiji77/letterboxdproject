@@ -4,11 +4,23 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         // Handle login logic here
-        console.log('Email:', email);
-        console.log('Password:', password);
+        const response = await fetch('http://localhost:5000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+        });
+        if (response.ok) {
+            alert('Login successful!');
+            alert(response.token)
+        } else {
+            alert('Login failed. Please check your credentials.');
+        }
+        
     };
 
     return (
